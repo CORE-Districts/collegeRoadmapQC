@@ -1,0 +1,174 @@
+---
+author: "`r Sys.getenv('USER')`"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+params:
+    district: "alpaugh"
+    period: "annual"
+    year: "2024"
+    wd: "wd"
+output: html_document
+---
+
+```{r, include=FALSE}
+set_title <- paste("College Roadmap Transcript QC Report - ", str_to_title(gsub("_", " ", params$district)))
+library(DT)
+```
+
+---
+title: `r set_title`
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, error = FALSE, out.width = "100%", fig.asp = 1)
+knitr::opts_knit$set(root.dir = params$wd)
+library(kableExtra)
+library(tidyverse)
+options(scipen = 999)
+
+table_check <- function(df, columns_of_interest){
+  # Filter the data frame to only include the columns of interest
+  df <- df[, columns_of_interest, drop = FALSE]
+
+  columns_to_sample <- names(df)
+
+  randomized_column_data <- data.frame(num=1:15)
+
+  for(column in columns_to_sample){
+    distinct_values <- df %>%
+      distinct(!!sym(column)) %>%
+      sample_n(min(15, nrow(.)))
+    
+    sampled_values <- sample(unlist(distinct_values), size = 15, replace = TRUE)
+    
+    randomized_column_data[[column]] <- sampled_values
+  }
+  randomized_column_data$num <- NULL
+  
+  x <- kbl(randomized_column_data, format = 'html') %>% kable_styling(full_width = F)
+
+  cat("\n")
+  cat(x)
+  cat("\n")
+}
+
+column_check <- function(df,columns_of_interest){
+  
+  df <- df[, columns_of_interest, drop = FALSE]
+
+  for (column in columns_of_interest) {
+    # Get distinct values and their counts in the entire dataframe
+    value_counts <- df %>%
+      group_by(!!sym(column)) %>%
+      summarize(count = n(), .groups = 'drop') %>%
+      arrange(desc(count))
+    
+
+    x <- kbl(value_counts,format = 'html') %>% kable_styling(full_width = F)
+   
+    cat("\n")
+    cat("### Column: ", column)
+    cat("\n")
+    cat(x)
+    cat("\n")
+     }
+     
+}
+
+cross_check_columns <- function(df, columns_to_crosscheck){
+
+  # for(cols in columns_to_crosscheck){
+  cols <- columns_to_crosscheck
+
+  data <- df %>%
+      select(all_of(cols)) %>%
+      group_by(across(all_of(cols))) %>%
+      summarise(count = n(), .groups = 'drop') %>%
+      arrange(across(all_of(cols)))
+
+    # x <- kbl(data,format = 'html') %>% kable_styling(full_width = F)
+
+    cat("\n")
+    cat("### Column_cross_check: ", paste(cols, collapse = ", "))
+    cat("\n")
+
+    return(datatable(data,
+                 options = list(
+                   pageLength = 10, # Show 10 rows per page
+                   autoWidth = TRUE, # Auto adjust column width
+                   dom = 'Bfrtip', # Include buttons and search box
+                   buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                   lengthMenu = list(c(10, 25, 50, -1), c('10', '25', '50', 'All')),
+                   rowCallback = JS('function(row, data, index) {
+                                     if (index % 2 === 0) {
+                                       $(row).css("background-color", "#f9f9f9");
+                                     }
+                                   }') # Alternating row colors
+                 ),
+                 extensions = 'Buttons', escape = FALSE))
+    cat("\n")
+
+  # }
+}
+
+
+```
+
+# Transcript Columns Check {.tabset}
+
+```{r, results='asis'}
+
+data <- open_file(
+  district = params$district,
+  period = params$period,
+  location = staticValues$locations$renamed,
+  file_type = staticValues$raw_file_type$transcript
+)
+  
+  # Define columns of interest
+  columns_of_interest <- c("school_name", "term", "block_schedule", "work_in_progress", "grade_level", "year",
+                           "course_name", "credits_attempted", "credits_earned", "mark", "calendar_type", 
+                           "a_to_g", "state_course_code", "state_course_name", "uc_csu_weighted",
+                           "district_defined_weighted", "cte_capstone_course", "repeat_course")
+
+  # Filter data to only include the columns of interest here before checking
+  # filtered_data <- data[columns_of_interest]
+  
+  cat("\n")
+  cat("## ", staticValues$data_elements$transcript, " Column Values {.tabset .tabset-pills}")
+  cat("\n")
+
+  table_check(data, columns_of_interest)
+
+```
+## Distinct Column Values {.tabset .tabset-pills}
+
+```{r, results='asis'}
+column_check(data,columns_of_interest)
+
+```
+## Crosscheck Column Values {.tabset .tabset-pills}
+
+```{r, echo=FALSE,results='asis'}
+
+crosscheck_list <- list(
+  c("year", "grade_level"),
+  c("year","grade_level", "term"),
+  c("year","grade_level", "school_name"),
+  c("a_to_g", "course_name"),
+  c("a_to_g", "course_name", "uc_csu_weighted"),
+  c("course_name", "uc_csu_weighted", "district_defined_weighted", "cte_capstone_course")
+)
+  
+cross_check_columns(data,crosscheck_list[[1]])
+cross_check_columns(data,crosscheck_list[[2]])
+cross_check_columns(data,crosscheck_list[[3]])
+cross_check_columns(data,crosscheck_list[[4]])
+cross_check_columns(data,crosscheck_list[[5]])
+cross_check_columns(data,crosscheck_list[[6]])
+
+# for(cols in crosscheck_list){
+
+
+
+```
+

@@ -1,0 +1,86 @@
+project: cr_transcript
+path_function: universal_file_path_helper
+base_path_local: collegeRoadmapQC
+base_path_secure: Z:/Shared/Internal/college_roadmaps/fall_2024/fall_2024_transcripts
+dev: "dev"
+year: 2024
+
+district_names:
+  Alpaugh: "alpaugh"
+  Burton: "burton"
+  Chawanakee: "chawanakee"
+  Cojusd: "cojusd"
+  Fowler: "fowler"
+  Gustine: "gustine"
+  LosBanos: "losbanos"
+  Porterville: "porterville"
+  Visalia: "visalia"
+
+periods:
+  annual: "annual"
+
+raw_file_type:
+  xwalk: "xwalk"
+  transcript: "transcript"
+
+data_elements:
+  transcript: "transcript"
+
+qc_template:
+  qc_report: "qc_report"
+
+qc_template_locations:
+  qc_report: "rmarkdown/templates/qc_report/skeleton"
+
+scripts:
+  process: "process"
+  loading_instructions: "loading_instructions"
+
+locations:
+  data_from_districts: 'data_from_districts'
+  feather_files: 'feather_files'
+  renamed: 'renamed'
+  local_qc: 'local_qc'
+  local_script: 'local_script'
+  local_directory: 'local_directory'
+
+location_paths:
+  data_from_districts: '${base_path_secure}/tcoe_${district}_transcript'
+  feather_files: '${base_path_secure}/tcoe_${district}_transcript/feather_files/${file_full}'
+  renamed: '${base_path_secure}/tcoe_${district}_transcript/renamed/${file_full}'
+  local_qc: "${dev}/${district}/qc/${file_full}"
+  local_script: "${dev}/${district}/scripts/${file_full}"
+  local_directory: "${base_path_local}"
+
+location_extensions:
+  data_from_districts: '.csv'
+  feather_files: '.feather'
+  renamed: '.feather'
+  local_qc: '.csv'
+  local_script: '.R'
+  local_directory: ''
+  default: '.csv'
+
+qc_output_locations:
+  qc_report: "qc_reports"
+
+google_folder_locations:
+  templates: "1wVSNE3q14GqIjX_K0weI8rw4Ctwm0sX4"
+  current_year: "1bwFZ00MeJ9J8ccDHooiIjIJKoty-hx6D"
+
+template_ids:
+  raw_files_xwalk: "1MQttCYjRGcscVPZAnnl6wIl0oBLcMIKY6pLM5bopWno"
+  transcript_columns: "1BGTkMniE6aEZ7RKq6N8hwMxsyPNwZ3cEQ-y9r6PXCRE"
+
+process_file_lines:
+  dist: "district <- \"${district}\""
+  per: "period <- \"${period}\""
+  yr: "year <- ${year}"
+  create_raw: "create_xwalk(district,period,feather_file_type = \"xwalk\")"
+  source_loading: "source_loading_instructions(district,period)"
+  load_files: "feather_file_loading_shell(district,period,loading_instructions = ${district}_loading_instructions)"
+  create_names: "create_name_crosswalks(district,period)"
+  apply_values: "apply_all_name_crosswalks(district,period)"
+
+process_file_write_lines:
+  dev: [dist, per, yr, create_raw, source_loading, load_files, create_names, apply_values]
