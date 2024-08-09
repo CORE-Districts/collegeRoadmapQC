@@ -81,6 +81,7 @@ process_file_lines:
   load_files: "feather_file_loading_shell(district,period,loading_instructions = ${district}_loading_instructions)"
   create_names: "create_name_crosswalks(district,period)"
   apply_values: "apply_all_name_crosswalks(district,period)"
+  render_qc: "render_qc_report(district,period,template = staticValues$qc_template$qc_report)"
 
 process_file_write_lines:
-  dev: [dist, per, yr, create_raw, source_loading, load_files, create_names, apply_values]
+  dev: [dist, per, yr, create_raw, source_loading, load_files, create_names, apply_values, render_qc]
